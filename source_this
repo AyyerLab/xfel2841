@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Load modules and environment
+module load anaconda3
+source activate /gpfs/exfel/exp/MID/202102/p002841/usr/env
+
