@@ -10,7 +10,7 @@ from mpi4py import MPI
 from constants import *
 
 def accumulate_corr(photons, corr, modnum):
-    place = np.where(photons>1)[0]
+    place = np.where(photons>0)[0]
     count = photons[place]
 
     x = cx[place]
@@ -24,6 +24,7 @@ def accumulate_corr(photons, corr, modnum):
 parser = argparse.ArgumentParser(description='Save photons to emc file')
 parser.add_argument('run', help='Run number', type=int)
 parser.add_argument('-n', '--nframes', help='Number of frames to process (default: -1, all)', type=int, default=-1)
+parser.add_argument('-m', '--mask', help='Path to mask file (default: mask_goodpix_cells_02.npy)')
 args = parser.parse_args()
 
 # MPI stuff: Get which module to process
@@ -37,7 +38,7 @@ my_module = rank // ranks_per_module
 # Open VDS file
 f_vds = h5py.File(PREFIX+'vds/r%.4d_proc.cxi' % args.run, 'r')
 dset_vds = f_vds['entry_1/instrument_1/detector_1/data']
-nevt = args.nframes if args.nframes >= 0 else dset.shape[0]
+nevt = args.nframes if args.nframes >= 0 else dset_vds.shape[0]
 nchunks = nevt // CHUNK_SIZE
 if rank == 0:
     print('Processing %d events with %d ranks per module' % (nevt, ranks_per_module))
@@ -52,7 +53,10 @@ dset_imean = f_out.create_dataset('entry_1/imean', (nevt, 16), dtype='f8')
 with h5py.File(PREFIX+'geom/geom_module.h5', 'r') as f:
     cx = f['x'][:].ravel()
     cy = f['y'][:].ravel()
-mask = np.load(PREFIX+'geom/mask_goodpix_cells_02.npy')
+if args.mask is None:
+    mask = np.load(PREFIX+'geom/mask_goodpix_cells_02.npy')
+else:
+    mask = np.load(args.mask)
 num_goodpix = mask.sum((2,3))
 
 # Initialize g^(2) corr array
@@ -72,9 +76,6 @@ for i, ind in enumerate(range(rank % ranks_per_module, nchunks, ranks_per_module
         if np.any(np.isnan(frames[j])):
             continue
         phot = np.clip(np.round(frames[j]/ADU_PER_PHOTON-0.3), 0, None).astype('i4').ravel()
-
-        # RANDOM REDUCTION (TODO: REMOVE)
-        phot *= np.random.choice(2, size=512*128, p=[0.9, 0.1])
 
         ngpix = num_goodpix[chunk_cid[j], my_module].sum()
         dset_p1[s+j, my_module] = (phot==1).sum() / ngpix
