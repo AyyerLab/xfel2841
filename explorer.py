@@ -24,7 +24,7 @@ class Explorer():
         self._fvds = None
         self.open_run(run, raw)
 
-        if op.exists(geom_file):
+        if op.exists(PREFIX + 'geom/' + geom_file):
             self.parse_geom(geom_file)
         else:
             self.geom = None
