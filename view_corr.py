@@ -45,6 +45,7 @@ def main():
     parser = argparse.ArgumentParser(description='Visualize corr file for run')
     parser.add_argument('run', help='Run number', type=int)
     #parser.add_argument('-a', '--assemble', help='Assemble corr by module', action='store_true')
+    parser.add_argument('-p', '--powder', help='Assemble powder sum', action='store_true')
     parser.add_argument('-s', '--subtract', help='Subtract g^(2) offset for each module', action='store_true')
     parser.add_argument('-c', '--center', help='Shift q=0 to center of ASIC', action='store_true')
     parser.add_argument('-g', '--geom', help='Path to geometry file (default: agipd_2746_v1.geom)',
@@ -55,6 +56,9 @@ def main():
     with h5py.File(PREFIX+'corr/r%.4d_corr.h5'%args.run, 'r') as f:
         corr = f['data/corr'][:]
         powderc = f['data/powder'][:]
+    if args.powder:
+        plot_corrdet(powderc, args.geom, args.vmax)
+        return
         
     ncorr = normalize(corr, powderc)
     corrdet = extract_mod(ncorr, center=args.center)
