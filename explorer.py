@@ -28,6 +28,7 @@ class Explorer():
             self.parse_geom(geom_file)
         else:
             self.geom = None
+            print('No geom file parsed!')
 
     def open_run(self, run, raw=False):
         self.run_num = run
@@ -42,7 +43,7 @@ class Explorer():
         print('VDS data set shape:', self._dset.shape)
 
     def parse_geom(self, geom_file):
-        self.geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom(geom_file)
+        self.geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom(PREFIX + 'geom/' + geom_file)
         x, y, _ = self.geom.get_pixel_positions().transpose(3,0,1,2) / 236e-6
         self.rad = np.sqrt(x*x + y*y)
 
