@@ -21,8 +21,9 @@ module load anaconda3
 source deactivate
 source activate /gpfs/exfel/exp/MID/202102/p002841/usr/env
 
+mask_file=/gpfs/exfel/exp/MID/202102/p002841/scratch/geom/mask_goodpix_cells_03.npy
 which mpirun
 which python
 which h5ls
 #mpirun -mca btl_tcp_if_include ib0 python ../proc_modules.py $SLURM_ARRAY_TASK_ID -n 10000
-mpirun -mca btl_tcp_if_include ib0 python ../proc_modules.py $SLURM_ARRAY_TASK_ID
+mpirun -mca btl_tcp_if_include ib0 python ../proc_modules.py $SLURM_ARRAY_TASK_ID -m ${mask_file}
