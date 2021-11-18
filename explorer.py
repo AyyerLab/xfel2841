@@ -20,7 +20,7 @@ import extra_geom
 from constants import *
 
 class Explorer():
-    def __init__(self, run, geom_file='geom_00.geom', raw=False):
+    def __init__(self, run, geom_file='agipd_2746_v1.geom', raw=False):
         self._fvds = None
         self.open_run(run, raw)
 
@@ -127,4 +127,3 @@ class Explorer():
             assem = self.geom.position_modules_fast(frame)[0][:,::-1]
         P.imshow(assem, origin='lower', vmin=vmin, vmax=vmax, **kwargs)
         P.gca().set_facecolor('dimgray')
-
