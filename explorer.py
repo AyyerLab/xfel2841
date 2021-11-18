@@ -37,7 +37,7 @@ class Explorer():
         if raw:
             self._fvds = h5py.File(PREFIX+'vds/r%.4d_raw.cxi'%run, 'r')
         else:
-            self._fvds = h5py.File(PREFIX+'vds/proc/r%.4d_proc.cxi'%run, 'r')
+            self._fvds = h5py.File(PREFIX+'vds/r%.4d_proc.cxi'%run, 'r')
         self._dset = self._fvds['entry_1/instrument_1/detector_1/data']
         self.raw_data = raw
         print('VDS data set shape:', self._dset.shape)
