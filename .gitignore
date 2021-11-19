@@ -1,2 +1,6 @@
 .*.out
 __pycache__/
+2021_EU_XFEL_Hamburg/
+*.un~
+*.swp
+.*/
