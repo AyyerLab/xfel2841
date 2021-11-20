@@ -20,7 +20,7 @@ import extra_geom
 from constants import *
 
 class Explorer():
-    def __init__(self, run, geom_file='agipd_2746_v1.geom', raw=False):
+    def __init__(self, run, geom_file='agipd_2841_v1.geom', raw=False):
         self._fvds = None
         self.open_run(run, raw)
 
