@@ -55,9 +55,10 @@ with h5py.File(PREFIX+'geom/geom_module.h5', 'r') as f:
     cx = f['x'][:].ravel()
     cy = f['y'][:].ravel()
 if args.mask is None:
-    mask = np.load(PREFIX+'geom/mask_goodpix_cells_02.npy')
+    mask_fname = PREFIX+'geom/mask_goodpix_cells_02.npy'
 else:
-    mask = np.load(args.mask)
+    mask_fname = args.mask
+mask = np.load(mask_fname)
 num_goodpix = mask.sum((2,3))
 
 # Initialize g^(2) corr array
@@ -118,6 +119,7 @@ if rank == 0:
         f['data/corr'] = red_corr / nevt
         f['data/powder'] = red_powder.reshape(16,512,128) / nevt
         f['data/num_frames'] = nevt
+        f['data/mask_fname'] = mask_fname
 else:
     comm.Reduce(powder, None, root=0, op=MPI.SUM)
     comm.Reduce(corr, None, root=0, op=MPI.SUM)
