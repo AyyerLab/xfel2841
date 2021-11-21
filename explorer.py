@@ -6,15 +6,18 @@ Use appropriate matplotlib magic command for plotting
 '''
 
 import sys
+import os
 import os.path as op
 import importlib
 import itertools
 import warnings
+from functools import lru_cache
 
 import numpy as np
-from scipy.stats import binned_statistic 
+from scipy.stats import binned_statistic
 import pylab as P
 import h5py
+import yaml
 import extra_geom
 
 from constants import *
@@ -40,20 +43,19 @@ class Explorer():
             self._fvds = h5py.File(PREFIX+'vds/r%.4d_proc.cxi'%run, 'r')
         self._dset = self._fvds['entry_1/instrument_1/detector_1/data']
         self.raw_data = raw
-        print('VDS data set shape:', self._dset.shape)
+        self.num_frames = self._dset.shape[0]
+        #print('VDS data set shape:', self._dset.shape)
+
+        self._calmd = None
+        calmd_fname = PREFIX+'proc/r%.4d/calibration_metadata.yml'%run
+        if raw and os.path.exists(calmd_fname):
+            with open(calmd_fname, 'r') as f:
+                self._calmd = yaml.safe_load(f)
 
     def parse_geom(self, geom_file):
         self.geom = extra_geom.AGIPD_1MGeometry.from_crystfel_geom(PREFIX + 'geom/' + geom_file)
         x, y, _ = self.geom.get_pixel_positions().transpose(3,0,1,2) / 236e-6
         self.rad = np.sqrt(x*x + y*y)
-
-    def parse_dark(self, dark_run):
-        '''Get dark offsets and bad pixel mask'''
-        with h5py.File(PREFIX+'dark/r%.4d_dark.h5'%dark_run, 'r') as f:
-            self.dark = f['data/mean'][:]
-            self.dcells = f['data/cellId'][:]
-            sigma = f['data/sigma'][:]
-        self.mask = (sigma.mean(1) < 0.5) | (sigma.mean(1) > 1.5)
 
     @staticmethod
     def assemble_dense(frame, out=None):
@@ -98,7 +100,7 @@ class Explorer():
     def _common_mode(self, img, mask):
         """img should be substracted by the dark.
         img.shape == (X, Y), mask.shape == (X, Y)"""
-        ig = img.astype('f8').copy()
+        ig = img.astype('f4').copy()
         L = 64
         for i, j in itertools.product(range(ig.shape[0] // L),
                                       range(ig.shape[1] // L)):
@@ -109,15 +111,23 @@ class Explorer():
         return ig
 
     def get_corr(self, i, cmod=False):
-        if self.raw_data:
-            if self.dark is None:
-                raise AttributeError('Parse darks first to get corrected frame with raw data')
-            cellid = self._fvds['entry_1/cellId'][i, 0]
-            out = self._dset[i,:,0] - self.dark[:, np.where(cellid==self.dcells)[0][0]]
-            if not cmod:
-                return out
-            return np.array([self._common_mode(out[i], ~self.mask[i]) for i in range(16)])
-        return self._dset[i]
+        if not self.raw_data:
+            return self._dset[i]
+        return np.array([self.correct_mod(i, m, cmod=cmod) for m in range(16)])
+
+    def correct_mod(self, i, modnum, cmod=False):
+        if not self.raw_data:
+            return self._dset[i, modnum]
+
+        if self._calmd is None:
+            raise AttributeError('No metadata file for calibration')
+        corr = self._dset[i, modnum, 0].astype('f4')
+        if np.all(corr==0):
+            return np.ones(corr.shape) * -5000
+        corr -= self._get_offset(modnum, i % NCELLS)
+        if cmod:
+            return self._common_mode(corr, ~self._get_badpix(modnum, i % NCELLS))
+        return corr
 
     def plot_frame(self, i, vmin=-20, vmax=200, cmod=False, **kwargs):
         frame = self.get_corr(i, cmod=cmod)
@@ -128,3 +138,21 @@ class Explorer():
             assem = self.geom.position_modules_fast(frame)[0][:,::-1]
         P.imshow(assem, origin='lower', vmin=vmin, vmax=vmax, **kwargs)
         P.gca().set_facecolor('dimgray')
+
+    @lru_cache(maxsize=352)
+    def _get_badpix(self, modnum, cellid):
+        if self._calmd is None:
+            print('No calibration metadata')
+            return
+        fname = self._calmd['retrieved-constants']['AGIPD%.2d'%modnum]['constants']['BadPixelsDark']['file-path']
+        with h5py.File(fname, 'r') as f:
+            return f[list(f.keys())[0]]['BadPixelsDark/0/data'][:,:,cellid,0].T > 0
+
+    @lru_cache(maxsize=352)
+    def _get_offset(self, modnum, cellid):
+        if self._calmd is None:
+            print('No calibration metadata')
+            return
+        fname = self._calmd['retrieved-constants']['AGIPD%.2d'%modnum]['constants']['Offset']['file-path']
+        with h5py.File(fname, 'r') as f:
+            return f[list(f.keys())[0]]['Offset/0/data'][:,:,cellid,0].T
