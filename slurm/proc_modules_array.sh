@@ -3,7 +3,7 @@
 #SBATCH --array=55
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=64
-#SBATCH --time=04:00:00
+#SBATCH --time=08:00:00
 #SBATCH --export=ALL
 #SBATCH -J proc_idi
 #SBATCH -o .%j.out
@@ -21,7 +21,7 @@ module load anaconda3
 source deactivate
 source activate /gpfs/exfel/exp/MID/202102/p002841/usr/env
 
-mask_file=/gpfs/exfel/exp/MID/202102/p002841/scratch/geom/mask_goodpix_cells_04.npy
+mask_file=/gpfs/exfel/exp/MID/202102/p002841/scratch/geom/mask_goodpix_cells_07.npy
 #which mpirun
 #which python
 #which h5ls
