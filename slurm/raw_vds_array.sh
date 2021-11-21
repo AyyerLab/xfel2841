@@ -19,5 +19,4 @@ source /etc/profile.d/modules.sh
 source ${PREFIX}/scratch/ayyerkar/ana/source_this
 
 run=`printf %.4d "${SLURM_ARRAY_TASK_ID}"`
-#extra-data-make-virtual-cxi ${PREFIX}/proc/r${run} -o ${PREFIX}/scratch/vds/r${run}_proc.cxi
-extra-data-make-virtual-cxi ${PREFIX}/raw/r${run} -o ${PREFIX}/scratch/vds/r${run}_raw.cxi
+extra-data-make-virtual-cxi ${PREFIX}/raw/r${run} -o ${PREFIX}/scratch/vds/r${run}_raw.cxi --exc-suspect-trains
