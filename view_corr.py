@@ -48,8 +48,8 @@ def main():
     parser.add_argument('-p', '--powder', help='Assemble powder sum', action='store_true')
     parser.add_argument('-s', '--subtract', help='Subtract g^(2) offset for each module', action='store_true')
     parser.add_argument('-c', '--center', help='Shift q=0 to center of ASIC', action='store_true')
-    parser.add_argument('-g', '--geom', help='Path to geometry file (default: agipd_2746_v1.geom)',
-                        default=PREFIX+'geom/agipd_2746_v1.geom')
+    parser.add_argument('-g', '--geom', help='Path to geometry file (default: agipd_2841_v1.geom)',
+                        default=PREFIX+'geom/agipd_2841_v1.geom')
     parser.add_argument('--vmax', help='Color map vmax (default: auto)', type=float)
     args = parser.parse_args()
 
