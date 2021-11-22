@@ -32,12 +32,12 @@ args = parser.parse_args()
 if args.calmd_run < 0:
     args.calmd_run = args.run
 
-f = h5py.File(PREFIX+'events/raw/r%.4d_events.h5'%args.run, 'r', driver='mpio', comm=comm)
+f = h5py.File(PREFIX+'events/raw/r%.4d_events.h5'%args.run, 'r')
 imean = f['entry_1/imean'][:]
 f.close()
+
 imean = imean.astype('float')
 imean[imean == 0] = np.nan
-
 i_inner = np.mean([imean[:,3], imean[:,4]], axis = 0)
 i_outer = np.mean([imean[:,0], imean[:,7]], axis = 0)
 sel_mat = (i_inner - i_outer)
@@ -56,6 +56,7 @@ module_rank = rank % ranks_per_module
 f_vds = h5py.File(PREFIX+'vds/r%.4d_raw.cxi' % args.run, 'r')
 dset_vds = f_vds['entry_1/instrument_1/detector_1/data']
 nevt = args.nframes if args.nframes >= 0 else dset_vds.shape[0]
+nevt = 1000
 if rank == 0:
     print('Processing %d events with %d ranks per module in run %d' % (nevt, ranks_per_module, args.run))
 
@@ -133,7 +134,6 @@ if rank == 0:
     sys.stderr.write('\nFinished processing in %.3f s\n' % (time.time()-stime))
     sys.stderr.flush()
 
-f_out.close()
 if rank == 0:
     sys.stderr.write('Closed events file in %.3f s\n' % (time.time()-stime))
     sys.stderr.flush()
