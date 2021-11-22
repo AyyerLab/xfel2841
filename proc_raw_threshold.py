@@ -60,13 +60,6 @@ nevt = 1000
 if rank == 0:
     print('Processing %d events with %d ranks per module in run %d' % (nevt, ranks_per_module, args.run))
 
-# Create output datasets
-#f_out = h5py.File(PREFIX+'events/raw/r%.4d_events.h5'%args.run, 'r', driver='mpio', comm=comm)
-#dset_p1 = f_out.create_dataset('entry_1/p1', (nevt, 16), dtype='f8')
-#dset_p2 = f_out.create_dataset('entry_1/p2', (nevt, 16), dtype='f8')
-#dset_imean = f_out.create_dataset('entry_1/imean', (nevt, 16), dtype='f8')
-
-# Parse module geometry and masks
 with h5py.File(PREFIX+'geom/geom_module.h5', 'r') as f:
     cx = f['x'][:].ravel()
     cy = f['y'][:].ravel()
@@ -119,11 +112,6 @@ for i, ind in enumerate(my_events):
     calib *= mask[cid]
     #phot = np.clip(np.round(calib/RAW_ADU_PER_PHOTON-0.3), 0, None).astype('i4').ravel()
     phot = np.clip(np.round(calib/gain[cid]/ADU_PER_PHOTON-0.3), 0, None).astype('i4').ravel()
-
-    #dset_p1[ind, my_module] = (phot==1).sum() / num_goodpix[cid]
-    #dset_p2[ind, my_module] = (phot==2).sum() / num_goodpix[cid]
-    #dset_imean[ind, my_module] = phot.sum() / num_goodpix[cid]
-
     accumulate_corr(phot, corr, my_module)
     powder[my_module] += phot
 
