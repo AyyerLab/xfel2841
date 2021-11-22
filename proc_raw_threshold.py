@@ -143,12 +143,14 @@ if rank == 0:
     comm.Reduce(powder, red_powder, root=0, op=MPI.SUM)
     red_corr = np.zeros_like(corr)
     comm.Reduce(corr, red_corr, root=0, op=MPI.SUM)
-    n_sel = n_sel[:,np.newaxis, np.newaxis]
+    red_n_sel = np.zeros_like(n_sel)
+    comm.Reduce(n_sel, red_n_sel, root=0, op=MPI.SUM)
+    red_n_sel = red_n_sel[:,np.newaxis, np.newaxis]
     with h5py.File(PREFIX+'corr/select/raw/r%.4d_corr.h5'%args.run, 'w') as f:
-        f['data/corr'] = red_corr / n_sel
-        f['data/powder'] = red_powder.reshape(16,512,128) / n_sel
+        f['data/corr'] = red_corr / red_n_sel
+        f['data/powder'] = red_powder.reshape(16,512,128) / red_n_sel
         f['data/num_frames'] = nevt
-        f['data/num_sel'] = n_sel
+        f['data/num_sel'] = red_n_sel
         f['data/mask_fname'] = mask_fname
 else:
     comm.Reduce(powder, None, root=0, op=MPI.SUM)
