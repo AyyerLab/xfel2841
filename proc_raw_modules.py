@@ -72,6 +72,9 @@ with open(calmd_fname, 'r') as f:
 offset_fname = calmd['retrieved-constants']['AGIPD%.2d'%my_module]['constants']['Offset']['file-path']
 with h5py.File(offset_fname, 'r') as f:
     offset = f[list(f.keys())[0]]['Offset/0/data'][:,:,:,0].transpose(2,1,0)
+gain_fname = calmd['retrieved-constants']['AGIPD%.2d'%my_module]['constants']['SlopesFF']['file-path']
+with h5py.File(gain_fname, 'r') as f:
+    gain = f[list(f.keys())[0]]['SlopesFF/0/data'][:,:,:].transpose(2,1,0)
 
 # Initialize g^(2) corr array
 cshape = tuple(np.array((2*(cx.max() - cx.min()) + 1, 2*(cy.max()-cy.min()) + 1)).astype('i4'))
@@ -98,7 +101,8 @@ for i, ind in enumerate(my_events):
     calib = calib.astype('f4') - offset[cid]
     calib = (calib.reshape(8,64,2,64) - np.median(calib.reshape(8,64,2,64), axis=(1,3), keepdims=True)).reshape(512,128)
     calib *= mask[cid]
-    phot = np.clip(np.round(calib/RAW_ADU_PER_PHOTON-0.3), 0, None).astype('i4').ravel()
+    #phot = np.clip(np.round(calib/RAW_ADU_PER_PHOTON-0.3), 0, None).astype('i4').ravel()
+    phot = np.clip(np.round(calib/gain[cid]/ADU_PER_PHOTON-0.3), 0, None).astype('i4').ravel()
 
     dset_p1[ind, my_module] = (phot==1).sum() / num_goodpix[cid]
     dset_p2[ind, my_module] = (phot==2).sum() / num_goodpix[cid]
@@ -107,7 +111,7 @@ for i, ind in enumerate(my_events):
     accumulate_corr(phot, corr, my_module)
     powder[my_module] += phot
 
-    if rank == 0:
+    if rank == 0 and (i+1) % 10 == 0:
         sys.stderr.write('\rFrame %d/%d (%.3f Hz)' % (ind+1, my_nevt, (ind+1)*ranks_per_module/(time.time()-stime)))
         sys.stderr.flush()
 if rank == 0:
